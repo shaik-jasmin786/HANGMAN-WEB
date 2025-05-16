@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hangman Game</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+  #hangman-img { width: 150px; height: 150px; }
+  #word-display { font-size: 36px; letter-spacing: 10px; margin: 20px 0; }
+  #hint { font-style: italic; color: #555; margin-bottom: 20px; }
+  #guessed { margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>Hangman Game</h1>
+
+<label for="difficulty">Select Difficulty:</label>
+<select id="difficulty">
+  <option>Easy</option>
+  <option selected>Medium</option>
+  <option>Hard</option>
+</select>
+<button onclick="startGame()">Start Game</button>
+
+<div id="hint"></div>
+<img id="hangman-img" src="/static/images/hangman0.png" alt="Hangman" />
+<div id="word-display">_ _ _ _ _ _</div>
+
+<label for="letter-input">Enter Letter:</label>
+<input type="text" id="letter-input" maxlength="1" style="width:30px; text-transform:lowercase;" />
+<button onclick="makeGuess()">Guess</button>
+
+<div id="tries"></div>
+<div id="guessed"></div>
+
+<script>
+  let word = "";
+  let hint = "";
+  let guessed = [];
+  let tries = 6;
+
+  function startGame() {
+    let difficulty = document.getElementById("difficulty").value;
+    fetch(`/get_word?difficulty=${difficulty}`)
+      .then(res => res.json())
+      .then(data => {
+        word = data.word;
+        hint = data.hint;
+        guessed = [];
+        tries = 6;
+        document.getElementById("hint").textContent = `Hint: ${hint}`;
+        updateDisplay();
+      });
+  }
+
+  function updateDisplay() {
+    let display = word.split('').map(letter => guessed.includes(letter) ? letter : "_").join(" ");
+    document.getElementById("word-display").textContent = display;
+    document.getElementById("tries").textContent = `Remaining tries: ${tries}`;
+    document.getElementById("guessed").textContent = `Guessed letters: ${guessed.join(" ")}`;
+    document.getElementById("hangman-img").src = `/static/images/hangman${6 - tries}.png`;
+
+    if (!display.includes("_")) {
+      alert(`You won! The word was: ${word}`);
+      startGame();
+    }
+    else if (tries === 0) {
+      alert(`You lost! The word was: ${word}`);
+      startGame();
+    }
+  }
+
+  function makeGuess() {
+    let letterInput = document.getElementById("letter-input");
+    let letter = letterInput.value.toLowerCase();
+    letterInput.value = "";
+
+    if (!letter.match(/[a-z]/) || letter.length !== 1) {
+      alert("Please enter a single alphabet letter.");
+      return;
+    }
+
+    if (guessed.includes(letter)) {
+      alert(`You already guessed '${letter}'.`);
+      return;
+    }
+
+    guessed.push(letter);
+
+    if (!word.includes(letter)) tries--;
+
+    updateDisplay();
+  }
+</script>
+
+</body>
+</html>
